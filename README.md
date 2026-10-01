@@ -1,119 +1,114 @@
 # PlayPollo
 
-A [Playnite](https://playnite.link) plugin that adds games to a [Sunshine](https://github.com/LizardByte/Sunshine)
-or [Apollo](https://github.com/ClassicOldSong/Apollo) game-streaming server as apps. It uses the server's admin
-REST API, so it needs no elevation and works against a server on another machine.
+PlayPollo is a [Playnite](https://playnite.link) plugin for adding games to a
+[Sunshine](https://github.com/LizardByte/Sunshine) or [Apollo](https://github.com/ClassicOldSong/Apollo) streaming
+server. It uses the server's admin REST API, requires no elevation, and supports remote servers.
 
-## Using it
+## Features
 
-1. Install the `.pext` (double-click it, or drop it into Playnite).
-2. Open **Add-ons > Extensions > Generic > PlayPollo** and fill in the server's admin username and password.
-   The install folder and web UI port are detected automatically (see [Server detection](#server-detection)).
-   Use **Browse...** for a custom location.
-3. Press **Test connection**. The first success pins the server's self-signed certificate; later connections
-   only trust that certificate. If the certificate changes later, use **Forget certificate** and test again.
-4. Right-click one or more games > **Sunshine / Apollo** and pick an action.
+- Add, update, and remove Playnite games in Sunshine or Apollo from the right-click menu, including bulk actions.
+- Launch through Playnite or run the game's executable directly.
+- Automatic executable discovery, allowing for choice when multiple .exe are found.
+- Playnite cover art added automatically to applications.
+- Optional auto-sync of name, cover, and launch changes for exported games.
+- Automatically closes the streaming session when Playnite detects the game has closed. (Optional)
+- Automatic server detection (Sunshine/Apollo), with ability to specify custom server install path.
 
-### Right-click menu
+## Requirements
 
-The menu reflects what's already on the server, so it only offers actions that make sense for each game:
+- Windows with [Playnite](https://playnite.link).
+- A Sunshine or Apollo server with its web UI admin credentials.
 
-| Game state | Actions shown |
+## Setup
+
+1. Install the `.pext` by double-clicking it or dropping it into Playnite.
+2. In **Add-ons > Extensions > Generic > PlayPollo**, enter the server's admin username and password. The install
+   folder and web UI port are detected automatically; use **Browse...** to choose a custom folder.
+3. Select **Test connection**. On first success, PlayPollo pins the server's self-signed certificate and trusts only
+   that certificate on later connections. If it changes, select **Forget certificate** and test again.
+4. Right-click games and choose **Sunshine / Apollo**.
+
+### Authentication
+
+The admin password is encrypted with Windows DPAPI for your user account. Apollo uses session login; Sunshine supports
+HTTP Basic. PlayPollo tries Basic first, then falls back to session login.
+
+## Use
+
+The context menu reflects each game's server state:
+
+| State | Actions |
 | --- | --- |
 | Not added | **Add**, **Add (launch through Playnite)**, **Add (launch the game's executable)** |
 | Added | **Update**, **Update (launch through Playnite)**, **Update (launch the game's executable)**, **Update (choose the executable...)**, **Remove** |
 
-With several games selected, each action applies only to the games it fits and shows a count, for example
-"Add (3 games)". The main menu (**Extensions > Sunshine / Apollo**) has **Test connection** and
-**Sync all exported games**.
+For multiple selections, each action applies only to eligible games and shows a count (for example, **Add (3 games)**).
+The **Extensions > Sunshine / Apollo** menu provides **Test connection** and **Sync all exported games**.
 
-### Launch method
+### Launch options
 
-- **Through Playnite** (default): the app runs `playnite://playnite/start/<game id>`, so any library or emulator
-  works. The server can't track the game process itself. This is the safer choice for games that need their launcher
-  (Steam, anti-cheat) to start properly.
-- **Executable**: the app runs the game's own executable with that executable's folder as the working directory, so
-  the server can track the process. Launchers in front of the game are skipped.
+The launch method is remembered per game. Choose it from the context menu or set the default in settings:
 
-The method is remembered per game. Pick it from the right-click menu, or set the default in the settings.
+- **Through Playnite** (default) runs `playnite://playnite/start/<game id>`, supporting any library or emulator. Best for games that need a launcher such as Steam or anti-cheat.
+- **Executable** runs the game's executable from its own folder.
 
-#### Finding the executable
+### Executable discovery
 
-Library plugins such as Steam supply the play action themselves, so Playnite has no file for the plugin to read.
-In Executable mode the plugin therefore:
+For executable mode, PlayPollo uses a file-based play action when available. Otherwise, it scans up to four install
+folder levels, excludes installers, runtimes, crash handlers, and anti-cheat helpers, then ranks candidates by name,
+location (such as `bin` or `Win64`), size, and 64-bit status. It selects a clear best match or opens a picker when
+candidates are close (for example, Baldur's Gate 3's `bin\bg3.exe` and `bin\bg3_dx11.exe`). The selection is saved per
+game; use **Update (choose the executable...)** to change it. Canceling the picker skips that game. If no executable
+is found, PlayPollo falls back to Playnite launch and reports this in the summary. Auto-sync never opens the picker.
 
-1. uses the game's own file-based play action if it has one;
-2. otherwise scans the install folder (up to four levels deep), ignoring installers, runtimes, crash handlers and
-   anti-cheat helpers, and ranks what's left by name match, location (`bin`, `Win64`...), size and 64-bit;
-3. uses the best match if it's clearly ahead, and otherwise **shows a picker** so you can choose. For example
-   Baldur's Gate 3 offers `bin\bg3.exe` and `bin\bg3_dx11.exe`.
+## How it works
 
-Your choice is remembered per game. Use **Update (choose the executable...)** to pick again. If you cancel the
-picker, that game is skipped. If nothing is found (for example the game isn't installed), the game falls back to the
-Playnite launch and the summary says so. Auto-sync never shows the picker.
+- **Updates and sync:** Update modifies the existing entry. Apollo entries are matched by UUID; Sunshine entries, which
+  have no ID, are matched by the last-written name and command. With auto-sync enabled, changes to an exported game's
+  name, cover, or launch details are sent in a batch a few seconds after the last edit. Games are never added
+  automatically.
+- **Cover art:** Covers are converted to PNG. For a local server (`localhost`, a loopback or local IP, or this
+  machine's name), the PNG is saved in `%AppData%\Playnite\ExtensionsData\<plugin id>\covers` and referenced by path.
+  This avoids a Windows server bug: Sunshine and Apollo upload covers in text mode, changing each `0x0A` byte to
+  `0x0D 0x0A` and corrupting the PNG. Remote servers receive the cover through the API; Windows servers have the same
+  corruption issue, so covers won't display there.
+- **Ending a stream:** By default, closing an exported game in Playnite tells the server to close its running app,
+  ending the stream and returning the client to its app list. Apollo reports the running app, so only that game is
+  closed. Sunshine does not, so the active stream is ended regardless of which app is running. The request runs in the
+  background: unreachable servers are logged, while bad credentials or a changed certificate trigger a Playnite
+  notification.
+- **Server detection:** PlayPollo checks the configured path, then the `ApolloService` and `SunshineService` Windows
+  services, then `Program Files\Apollo` and `Program Files\Sunshine`. It checks both native and `(x86)` Program Files
+  locations because Playnite is 32-bit. The web UI port comes from `sunshine.conf` (base port + 1; default `47990`).
+  In Auto mode, the server type is identified from API responses.
 
-### Cover art
+## Limitations
 
-Covers are converted to PNG and set as the app image.
+- Games are never added automatically; auto-sync only updates games you have already exported.
+- Games without an executable in their install folder (including some Microsoft Store games) can only launch through
+  Playnite.
+- Launching through Playnite means the server cannot track the game process.
+- Covers don't display on remote Windows servers because of the text-mode upload bug described above.
+- With Sunshine, ending a stream closes the active stream regardless of which app is running.
+- Live-server testing has covered Apollo connection and detection; Sunshine is covered only by tests using a fake
+  server.
 
-- **Server on this PC** (`localhost`, a loopback or local IP, or this machine's name): the PNG is saved in the plugin's
-  data folder (`%AppData%\Playnite\ExtensionsData\<plugin id>\covers`) and the app's image path points at it. This is
-  deliberate. Sunshine and Apollo write uploaded covers in text mode on Windows, which turns every `0x0A` byte into
-  `0x0D 0x0A` and corrupts the PNG, so uploading to a Windows server can't produce a valid image.
-- **Server on another PC**: the cover is uploaded through the API. If that server is also Windows, the same
-  corruption applies and the cover won't display.
-
-### Ending the stream when the game closes
-
-With **End the stream when an exported game is closed in Playnite** on (the default), closing an exported game in
-Playnite tells the server to close the running app, which ends the stream and returns the client to its app list.
-
-- **Apollo** reports which app is running, so the stream is only ended if it's that game. Closing one exported game
-  while streaming a different one leaves the stream alone.
-- **Sunshine** doesn't report the running app, so the plugin ends whatever stream is active.
-- The call runs in the background. An unreachable server is only logged, since that's normal when the PC is off.
-  Bad credentials or a changed certificate raise a Playnite notification.
-
-### Server detection
-
-The install folder is found by checking, in order: the path you entered, the `ApolloService` and `SunshineService`
-Windows services, then `Program Files\Apollo` and `Program Files\Sunshine`. Playnite is a 32-bit program, so both the
-native and the `(x86)` Program Files folders are checked. The web UI port is read from `sunshine.conf` (base port + 1,
-default 47990). Sunshine and Apollo are told apart by their API responses when the server type is set to Auto.
-
-### Other behaviour
-
-- Re-running **Update** updates the existing entry. Apollo apps are matched by uuid. Sunshine apps have no id,
-  so they're matched by the name and command that were last written.
-- With **auto-sync** on, changing an exported game's name, cover or launch details in Playnite updates the server
-  (batched, a couple of seconds after the last edit). Games are never added automatically.
-- The admin password is stored encrypted with Windows DPAPI for your user account.
-- Apollo only accepts a session login, while Sunshine accepts HTTP Basic. The plugin tries Basic first and falls back
-  to logging in.
-
-## Building
+## Build and test
 
 ```powershell
 .\build.ps1
 ```
 
-This needs Visual Studio (for the WPF XAML build) and a Playnite install (for `Toolbox.exe`). It runs the tests,
-builds the plugin and writes `dist\PlayPollo_<id>_<version>.pext`. The tests alone run with
+Requires Visual Studio for the WPF XAML build and a Playnite installation for `Toolbox.exe`. The script runs tests,
+builds the plugin, and writes `dist\PlayPollo_<id>_<version>.pext`. Run tests alone with
 `dotnet test tests\PlayPollo.Tests`.
 
-Keep `Newtonsoft.Json` at **10.0.3**. Playnite ships 10.0.0.0, and Toolbox leaves out any assembly Playnite already
-provides when it packs, so a newer version fails to load with "Extension failed to load properly".
+Keep `Newtonsoft.Json` at **10.0.3**: Playnite ships 10.0.0.0, and Toolbox excludes assemblies already provided by
+Playnite when packing. A newer version causes "Extension failed to load properly". For load errors, check
+`%AppData%\Playnite\playnite.log` and search for `PlayPollo`.
 
-If the extension won't load, the reason is in `%AppData%\Playnite\playnite.log` (search for `PlayPollo`).
+## Project layout
 
-## Layout
-
-- `src/PlayPollo.Core`: the server clients, detection, executable finder, mapping and export logic (no UI, unit-tested).
-- `src/PlayPollo`: the Playnite plugin class, settings view-model and WPF settings view.
-- `tests/PlayPollo.Tests`: xunit tests using a fake HTTP handler and fake server client.
-
-## Known limits
-
-- Tested against a live Apollo only for connection and detection behaviour. Sunshine is covered by unit tests that fake the
-  server.
-- Games with no executable in their install folder (some Microsoft Store games) can only use the Playnite launch.
+- `src/PlayPollo.Core`: server clients, detection, executable discovery, mapping, and export logic; no UI, unit-tested.
+- `src/PlayPollo`: Playnite plugin, settings view-model, and WPF settings view.
+- `tests/PlayPollo.Tests`: xUnit tests with a fake HTTP handler and server client.
