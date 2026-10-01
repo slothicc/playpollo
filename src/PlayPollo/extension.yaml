@@ -1,0 +1,7 @@
+Id: PlayPollo_ad560681-6efd-4f0d-97ac-8f7e63038684
+Name: PlayPollo
+Author: Paul Damiani
+Version: 0.1.2
+Module: PlayPollo.dll
+Type: GenericPlugin
+Icon: icon.png

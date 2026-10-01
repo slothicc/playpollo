@@ -1,0 +1,74 @@
+<UserControl x:Class="PlayPollo.Settings.PlayPolloSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <TextBlock Text="Streaming server" FontWeight="Bold" Margin="0,0,0,8" />
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="Server type" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <ComboBox Grid.Row="0" Grid.Column="1" Margin="0,0,0,6" HorizontalAlignment="Left" MinWidth="160"
+                          ItemsSource="{Binding ServerKinds}" SelectedItem="{Binding Settings.ServerKind}" />
+
+                <TextBlock Grid.Row="1" Text="Host" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <TextBox Grid.Row="1" Grid.Column="1" Margin="0,0,0,6" Text="{Binding Settings.Host, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Grid.Row="2" Text="Web UI port" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,6" HorizontalAlignment="Left" Width="100"
+                         Text="{Binding Settings.Port, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Grid.Row="3" Text="Admin username" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,6" Text="{Binding Settings.Username, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Grid.Row="4" Text="Admin password" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <PasswordBox x:Name="PasswordInput" Grid.Row="4" Grid.Column="1" Margin="0,0,0,6" PasswordChanged="PasswordInput_PasswordChanged" />
+
+                <TextBlock Grid.Row="5" Text="Install folder" VerticalAlignment="Center" Margin="0,0,0,6" />
+                <TextBox Grid.Row="5" Grid.Column="1" Margin="0,0,0,6" Text="{Binding Settings.InstallPath, UpdateSourceTrigger=PropertyChanged}" />
+                <StackPanel Grid.Row="5" Grid.Column="2" Orientation="Horizontal" Margin="6,0,0,6">
+                    <Button Content="Browse..." Command="{Binding BrowseCommand}" Margin="0,0,6,0" />
+                    <Button Content="Auto-detect" Command="{Binding AutoDetectCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                <Button Content="Test connection" Command="{Binding TestConnectionCommand}" Margin="0,0,6,0" />
+                <Button Content="Forget certificate" Command="{Binding ForgetCertificateCommand}" />
+            </StackPanel>
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,8,0,0" />
+            <TextBlock TextWrapping="Wrap" Margin="0,8,0,0" Opacity="0.7"
+                       Text="The server uses a self-signed certificate. The first successful Test connection pins it, and later connections only trust that certificate." />
+
+            <TextBlock Text="Export" FontWeight="Bold" Margin="0,24,0,8" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="Default launch method" VerticalAlignment="Center" Width="160" />
+                <ComboBox MinWidth="160" ItemsSource="{Binding LaunchModes}" SelectedItem="{Binding Settings.DefaultLaunchMode}" />
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Opacity="0.7"
+                       Text="Uri starts the game through Playnite, so any library or emulator works. Executable runs the game's own file so the server can track it, and falls back to Uri when a game has no file-based play action. You can also pick per game from the game's right-click menu." />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="Exit timeout (seconds)" VerticalAlignment="Center" Width="160" />
+                <TextBox Width="60" Text="{Binding Settings.ExitTimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" />
+            </StackPanel>
+            <CheckBox Content="Export cover art as the app image" IsChecked="{Binding Settings.ExportCovers}" Margin="0,0,0,6" />
+            <CheckBox Content="Keep exported games in sync when their metadata changes in Playnite" IsChecked="{Binding Settings.AutoSync}" Margin="0,0,0,6" />
+            <CheckBox Content="End the stream when an exported game is closed in Playnite" IsChecked="{Binding Settings.EndStreamWhenGameCloses}" />
+            <TextBlock TextWrapping="Wrap" Margin="24,2,0,0" Opacity="0.7"
+                       Text="Apollo only ends the stream if that game is the one being streamed. Sunshine can't report which app is running, so it ends whatever stream is active." />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
